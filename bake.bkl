@@ -1,0 +1,8 @@
+toolsets = gnu;
+
+program PathExample {
+
+  sources {main.cpp Console.cpp Map.cpp PathFinding.cpp Actor.cpp ActorManager.cpp LOS.cpp};
+  libs = ncurses;
+  cxx-compiler-options = "-std=c++11" "-g";
+}
