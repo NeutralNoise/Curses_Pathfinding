@@ -19,6 +19,7 @@ Actor::Actor() {
   m_seenOtherTeam = false;
   m_killID = -1;
   m_attacking = false;
+  m_campCount = 0;
 }
 
 Actor::Actor(WorldMap *map) {
@@ -33,10 +34,11 @@ Actor::Actor(WorldMap *map) {
   m_seenOtherTeam = false;
   m_killID = -1;
   m_attacking = false;
+  m_campCount = 0;
 }
 
 void Actor::InitActor(const int &team, WorldMap * map) {
-  
+
   if(map != nullptr) {
     m_map = map;
   }
@@ -46,9 +48,9 @@ void Actor::InitActor(const int &team, WorldMap * map) {
     m_lasty = m_y;
     m_map->GetMapTile(m_x, m_y)->hasActor = true;
   }
-  
+
   m_team = team;
-  
+
 }
 
 void Actor::DrawActor(Console * con) {
@@ -74,11 +76,11 @@ void Actor::TickActor(Console * con, ActorManager &aman) {
     CheckVision(aman);
     if(m_attacking) {
       if(!Attack(aman)) {
-	Move(aman);
+	       Move(aman);
       }
     }
     else {
-      Move(aman);  
+      Move(aman);
     }
   }
   else {
@@ -117,7 +119,7 @@ bool Actor::Attack(ActorManager &aman) {
   if(a == nullptr) {
     return false;
   }
-  
+
   if(m_x == m_goalX - 1 && m_y == m_goalY ) {
     a->RemoveHealth(100.0f);
     if(a->GetHealth() <= 0.00f) {
@@ -197,34 +199,62 @@ bool Actor::Attack(ActorManager &aman) {
     }
     return true;
   }
-  
-  
-  
+  //Same Squre the actor is on.
+  else if(m_x == m_goalX && m_y == m_goalY) {
+    a->RemoveHealth(100.0f);
+    if(a->GetHealth() <= 0.00f) {
+      m_seenOtherTeam = false;
+      m_attacking = false;
+      m_killID = -1;
+    }
+    return true;
+  }
+
+
+
   return false;
 }
 
 void Actor::Move(ActorManager &aman) {
-  
+
   //If the Actor is dead do nothing.
   if(m_health <= 0.00f) {
     return;
   }
-  
+
+  int spawn_x = 0;
+  int spawn_y = 0;
+  if(m_team == 1) {
+    m_map->GetSpawn(spawn_x, spawn_y, 2);
+  }
+  else {
+    m_map->GetSpawn(spawn_x, spawn_y, 1);
+  }
+  if(m_x == spawn_x && m_y && spawn_y ) {
+    if(m_campCount == 5) {
+        m_campCount = 0;
+        m_map->GetSpawn(m_x, m_y, m_team);
+    }
+    else {
+        m_campCount++;
+    }
+  }
+
   if(m_seenOtherTeam && !m_attacking) {
     m_pather.FindPath(m_x, m_y, m_goalX, m_goalY, *m_map);
     m_attacking = true;
     m_pathed = false;
   }
   else if(m_attacking){
-    //We need to check to see if the actor hsa moved... Which it more then likely has. 
+    //We need to check to see if the actor hsa moved... Which it more then likely has.
     //bye bye CPU
     Actor *a = aman.GetActor(m_killID);
     if(a != nullptr) {
       if(a->GetXPos() != m_goalX || a->GetYPos() != m_goalY) {
-	m_goalX = a->GetXPos();
-	m_goalY = a->GetYPos();
-	m_pather.FindPath(m_x, m_y, m_goalX, m_goalY, *m_map);
-	m_pathed = false;
+    	m_goalX = a->GetXPos();
+    	m_goalY = a->GetYPos();
+    	m_pather.FindPath(m_x, m_y, m_goalX, m_goalY, *m_map);
+    	m_pathed = false;
       }
     }
     else {
@@ -243,14 +273,14 @@ void Actor::Move(ActorManager &aman) {
     if(!m_map->GetGoal(&goalx, &goaly, 0)) {
       //If all goals are taken get a goal taken by the other team.
       if(m_team == 1) {
-	if(m_map->GetGoal(&goalx, &goaly, 2)) {
-	  has_goal = true; 
-	}
+      	if(m_map->GetGoal(&goalx, &goaly, 2)) {
+      	  has_goal = true;
+      	}
       }
       else {
-	if(m_map->GetGoal(&goalx, &goaly, 1)) {
-	  has_goal = true;  
-	}
+      	if(m_map->GetGoal(&goalx, &goaly, 1)) {
+      	  has_goal = true;
+        }
       }
     }
     else {
@@ -260,26 +290,26 @@ void Actor::Move(ActorManager &aman) {
     //If the actor doesn't have a goal send them over to the other teams spawn.
     if(!has_goal) {
       if(m_team == 1) {
-	m_map->GetSpawn(goalx, goaly, 2);
+	       m_map->GetSpawn(goalx, goaly, 2);
       }
       else {
-	m_map->GetSpawn(goalx, goaly, 1);
+	       m_map->GetSpawn(goalx, goaly, 1);
       }
     }
-    
+
     //Set our goal;
     m_goalX = goalx;
     m_goalY = goaly;
-    
+
     m_pather.FindPath(m_x, m_y, m_goalX, m_goalY, *m_map);
     m_pathed = false;
   }
-  
-  
+
+
   //Move the Actor
   int x,y;
   m_pather.GetNextPathStep(&x,&y);
-  
+
   //Check if we have a valid next step;
   if(x == -1 || y == -1) {
     //Do something next turn.
@@ -294,7 +324,7 @@ void Actor::Move(ActorManager &aman) {
   if(m_x == m_goalX && m_y == m_goalY) {
     m_pathed = true;
   }
-  
+
   //check if the map tile the actor is on is set to there team. If it isn't change it over to there team.
   MapTile * t = m_map->GetMapTile(m_x, m_y);
   if(t != nullptr) {
@@ -328,15 +358,3 @@ int Actor::GetXPos() {
 int Actor::GetYPos() {
   return m_y;
 }
-
-
-
-
-
-
-
-
-
-
-
-
