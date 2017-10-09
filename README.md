@@ -1,7 +1,7 @@
 # Curses_Pathfinding
 A* Path finding using ncurses to display to terminal.
 
-#Compiling
+# Compiling
 Currently only compiles on linux based systems.
 
 Download and compile bakefile.
@@ -13,6 +13,11 @@ This will generate a makefile called GNUmakefile.
 
 You also need to have ncurses5 libs installed.
 
-#Known bugs
+To compile with debuging:
+make config=Debug
+
+# Known bugs
 Actors seems to ingore the cost of moving to a tile that another Actor has died on.
-Some Actors stop moving when they spot another actor.
+
+# Usage
+Hit Enter to tick the actors.
